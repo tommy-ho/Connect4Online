@@ -1,25 +1,20 @@
 package com.Connect4.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
+import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
-import javax.swing.AbstractButton;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -27,7 +22,6 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
-import javax.swing.border.BevelBorder;
 import javax.swing.border.LineBorder;
 
 public class Connect4GUI {
@@ -35,21 +29,24 @@ public class Connect4GUI {
 	private JFrame frame;
     private JLabel[][] slots;
     private JButton[] buttons;
-    //variables used in grid
     private int xsize;
     private int ysize;
     private int currentPlayer;
     private String currentPlayerColor;
-    private int playersConnected;
     private int playerTurn = 1; //Red starts first
     private int redWins;
     private int blackWins;
     private boolean gameOver;
     private int portNumDisplay;
     private JPanel c4Panel;
+    private JPanel optionsPanel;
     private JLabel statusLabel;
     private JLabel turnLabel;
     private JLabel recordLabel;
+    private JLabel connectedToLabel;
+	private JButton newGameButton;
+	private JButton forfeitButton;
+	private JButton disconnectButton;
     private Connect4BoardListener c4bl;
     private NewGameListener ngl;
 	private PrintWriter writer;
@@ -62,7 +59,7 @@ public class Connect4GUI {
 	public Connect4GUI() {
 		c4bl = new Connect4BoardListener();
 		ngl = new NewGameListener();
-		frame = new JFrame("Connect 4");
+		frame = new JFrame("Connect 4 Online by Tommy Ho");
 		setConnectView(frame);
 	}
 	
@@ -96,7 +93,7 @@ public class Connect4GUI {
 	
 	private void setConnect4View(){
 		frame.setVisible(false);
-		frame = new JFrame();
+		frame = new JFrame("Connect 4 Online by Tommy Ho");
 	 	c4Panel = (JPanel) frame.getContentPane();
 	    c4Panel.setLayout(new GridLayout(ysize + 1, xsize));
 		slots = new JLabel[xsize][ysize];
@@ -108,10 +105,8 @@ public class Connect4GUI {
 		}
 		for (int row = 0; row < ysize; row++) {
 			for (int col = 0; col < xsize; col++) {
-				//slots[col][row] = new JLabel();
 				slots[col][row] = new PieceLabel("blank");
 				slots[col][row].setText("0");
-				//graphics
 				slots[col][row].setOpaque(true);
 				slots[col][row].setBackground(Color.LIGHT_GRAY);
 				slots[col][row].setHorizontalAlignment(SwingConstants.CENTER);
@@ -120,7 +115,7 @@ public class Connect4GUI {
 			}
 		}
 	        
-		JPanel optionsPanel = new JPanel();
+		optionsPanel = new JPanel();
 		optionsPanel.setLayout(new GridLayout(4, 2));
 		optionsPanel.setBorder(new LineBorder(Color.black));
 		turnLabel = new JLabel();
@@ -134,22 +129,24 @@ public class Connect4GUI {
 		recordLabel.setText("Current score");
 		statusLabel = new JLabel();
 		statusLabel.setBorder(new LineBorder(Color.black));
-		statusLabel.setText("Connect 4 by Tommy Ho");
-		JButton newGameButton = new JButton("New Game");
+		statusLabel.setText("Connect 4 Online by Tommy Ho");
+		newGameButton = new JButton("New Game");
 		newGameButton.setBorder(new LineBorder(Color.black));
 		newGameButton.addActionListener(ngl);
-		JButton forfeitButton = new JButton("I Forfeit");
-		forfeitButton.addActionListener(ngl);
+		forfeitButton = new JButton("I Forfeit");
 		forfeitButton.setBorder(new LineBorder(Color.black));
-		JLabel connectedToLabel = new JLabel("You are connected to: Port " + portNumDisplay);
+		forfeitButton.addActionListener(ngl);
+		connectedToLabel = new JLabel("You are connected to: Port " + portNumDisplay);
 		connectedToLabel.setBorder(new LineBorder(Color.black));
-		JButton connectButton = new JButton(":)");
-		connectButton.setBorder(new LineBorder(Color.black));
+		disconnectButton = new JButton("Disconnect");
+		disconnectButton.setBorder(new LineBorder(Color.black));
+		disconnectButton.addActionListener(ngl);
 		
-		optionsPanel.add(connectedToLabel);
-		optionsPanel.add(connectButton);
+		
 		optionsPanel.add(newGameButton);
 		optionsPanel.add(forfeitButton);
+		optionsPanel.add(connectedToLabel);
+		optionsPanel.add(disconnectButton);
 		optionsPanel.add(playerLabel);
 		optionsPanel.add(recordLabel);
 		optionsPanel.add(turnLabel);
@@ -195,7 +192,7 @@ public class Connect4GUI {
 					playerTurn = 1;
 					turnLabel.setText("Currently Red's turn");
 				}
-				updateBoardView(playerNum, commandContent, c4Panel); //pass player + column placed
+				updateBoardView(playerNum, commandContent, c4Panel); //pass player + column placed + this panel
 				break;
 				
 			case "win":
@@ -231,6 +228,32 @@ public class Connect4GUI {
 				recordLabel.setText("Red: " + redWins + "       Black: " + blackWins);
 				break;
 				
+			case "disconnect":
+				gameOver = true;
+				if (currentPlayer == Integer.parseInt(playerNum)){
+					frame.setVisible(false);
+				} else {
+					ArrayList<Component> panel = new ArrayList<>(Arrays.asList(c4Panel.getComponents()));
+					ArrayList<Component> secondPanel = new ArrayList<>(Arrays.asList(optionsPanel.getComponents()));
+					panel.addAll(secondPanel);
+					for (Component b : panel){
+						if (b instanceof JButton && !((JButton) b).getText().equals("Disconnect")){
+							((JButton) b).removeActionListener(c4bl);
+							((JButton) b).removeActionListener(ngl);
+						}
+					}
+				}
+				
+				if (playerNum.equals("2")){
+					statusLabel.setText("Black has disconnected!");
+					redWins++;
+				} else {
+					statusLabel.setText("Red has disconnected!");
+					blackWins++;
+				}
+				recordLabel.setText("Red: " + redWins + "       Black: " + blackWins);
+				break;
+				
 			case "failure":
 				if (Integer.parseInt(playerNum) == currentPlayer){
 					statusLabel.setText("This column is full. Try again.");
@@ -249,7 +272,7 @@ public class Connect4GUI {
 		int rowIndex = slots[columnIndex].length - 1;
 		boolean updated = false;
 		while (updated != true){
-			//iterates to find first empty slot
+			//iterates to find first empty slot in column and changes color
 			if (slots[columnIndex][rowIndex].getText().equals("0")){
 				slots[columnIndex][rowIndex].setText(player);
 				if (player.equals("1")){
@@ -295,8 +318,6 @@ public class Connect4GUI {
 			if (!isConnected){
 				connectToServer(e);
 				isConnected = true;
-				//setConnect4View();
-				//updateView();
 			} else {
 				if (currentPlayer == playerTurn){
 					//send message to server with buttonPressed + player #
@@ -328,13 +349,15 @@ public class Connect4GUI {
 			String buttonPressed = ((JButton) e.getSource()).getText();
 			if (buttonPressed.equals("New Game")){
 				if (gameOver){ //Utilized socket connection in other button
-					System.out.println("Game over status is " + gameOver + " and it works");
 					writer.println(buttonPressed + ":" + currentPlayer);
 					writer.flush();
 				} else { //Game is not over, user must forfeit to start new game
 					statusLabel.setText("Forfeit to reset game");
 				}
 			} else if (buttonPressed.equals("I Forfeit")) {
+				writer.println(buttonPressed + ":" + currentPlayer);
+				writer.flush();
+			} else if (buttonPressed.equals("Disconnect")){
 				writer.println(buttonPressed + ":" + currentPlayer);
 				writer.flush();
 			}
@@ -363,6 +386,9 @@ public class Connect4GUI {
 			try {
 				while ((message = reader.readLine()) != null){
 					updateView(message);
+					if (message.matches("disconnect*")){
+						break;
+					}
 				}
 			} catch (Exception e){
 				e.printStackTrace();

@@ -23,6 +23,7 @@ public class Connect4Server implements Runnable{
 	private static final String NEW = "new";
 	private static final String FORFEIT = "forfeit";
 	private static final String FAILURE = "failure";
+	private static final String DISCONNECT = "disconnect";
 	
 	
 	public Connect4Server(String port, String boardSize) {
@@ -47,7 +48,7 @@ public class Connect4Server implements Runnable{
 				writer.println(STARTUP + ":" + clientsConnected + ":" + board.boardSize);
 				writer.flush();
 			}
-			serverSocket.close(); 	//2 Clients have connected to server
+			serverSocket.close(); //2 Clients have connected to server, close this listening socket
 		} catch (Exception e){
 			e.printStackTrace();
 		}
@@ -103,8 +104,7 @@ public class Connect4Server implements Runnable{
 		public void run() {
 			String message;
 			try {
-				while ((message = reader.readLine()) != null){
-					//parse message here into color/column if it is that color's turn (switch variable?)
+				while ((message = reader.readLine()) != null){				
 					String[] messageSplit = message.split(":");
 					
 					if (messageSplit[0].equals("New Game")){
@@ -115,6 +115,9 @@ public class Connect4Server implements Runnable{
 					} else if (messageSplit[0].equals("I Forfeit")){
 						publishMessage(FORFEIT + ":" + messageSplit[1] + ":" + -1);
 						continue;
+					} else if (messageSplit[0].equals("Disconnect")){
+						publishMessage(DISCONNECT + ":" + messageSplit[1] + ":" + -1);
+						break;
 					}
 					
 					int column = Integer.parseInt(messageSplit[0]);
@@ -124,16 +127,11 @@ public class Connect4Server implements Runnable{
 					boolean success = board.updateBoard(column, userColor);
 					if (success){
 						if (board.checkWinConditions(column, userColor)){
-							//submit win/lose message back to the clients
-							//append message with another section
 							publishMessage(WIN + ":" + userColor + ":" + column);
 						} else {
-							//submit success message here back to the clients
-							//to update the board. utilizes MOVE header
 							publishMessage(MOVE + ":" + userColor + ":" + column);
 						}
 					} else if (!success){
-						//submit failure to update back to client, prompt their turn again
 						publishMessage(FAILURE + ":" + userColor + ":" + column);
 					}
 				}
