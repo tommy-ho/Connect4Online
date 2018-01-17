@@ -15,12 +15,19 @@ import com.Connect4.server.Connect4Server;
 public class StartServerServlet extends HttpServlet{
 
 	private static final long serialVersionUID = 1L;
-	private static ArrayList<String> activeRooms;
+	private static ArrayList<String> activeRooms = new ArrayList<String>();;
 
 	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException{
 		if (!checkServerExist(request.getParameter("signIn"))){
 			startNewServer(request, response);
+		} else {
+			try {
+				request.getSession().setAttribute("status", "Port occupied. Please try another.");
+				request.getRequestDispatcher("retry.jsp").forward(request, response);
+			} catch (ServletException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -28,7 +35,6 @@ public class StartServerServlet extends HttpServlet{
 		String roomName = request.getParameter("signIn");
 		String boardSize = request.getParameter("boardSize");
 		new Thread(new Connect4Server(roomName, boardSize)).start();
-		activeRooms.add(roomName);
 		
 		try {
 			request.getSession().setAttribute("status", "Server is started, please log in via GUI");
@@ -39,14 +45,14 @@ public class StartServerServlet extends HttpServlet{
 	}
 	
 	private boolean checkServerExist(String name){
-		if (activeRooms == null){
-			activeRooms = new ArrayList<String>();
-		}
-		
-		if (activeRooms.contains(name)){
-			return true;
-		} else {
-			return false;
+		System.out.println(activeRooms);
+		synchronized(activeRooms){
+			if (activeRooms.contains(name)){
+				return true;
+			} else {
+				activeRooms.add(name);
+				return false;
+			}
 		}
 	}
 

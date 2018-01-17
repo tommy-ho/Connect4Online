@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ComponentListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.BufferedReader;
@@ -14,7 +13,6 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -26,18 +24,19 @@ import javax.swing.border.LineBorder;
 
 public class Connect4GUI {
 	
-	private JFrame frame;
-    private JLabel[][] slots;
-    private JButton[] buttons;
     private int xsize;
     private int ysize;
+    private String boardSize;
     private int currentPlayer;
     private String currentPlayerColor;
     private int playerTurn = 1; //Red starts first
     private int redWins;
     private int blackWins;
-    private boolean gameOver;
     private int portNumDisplay;
+    private boolean gameOver;
+	private JFrame frame;
+    private JLabel[][] slots;
+    private JButton[] buttons;
     private JPanel c4Panel;
     private JPanel optionsPanel;
     private JLabel statusLabel;
@@ -105,7 +104,7 @@ public class Connect4GUI {
 		}
 		for (int row = 0; row < ysize; row++) {
 			for (int col = 0; col < xsize; col++) {
-				slots[col][row] = new PieceLabel("blank");
+				slots[col][row] = new PieceLabel("blank", boardSize);
 				slots[col][row].setText("0");
 				slots[col][row].setOpaque(true);
 				slots[col][row].setBackground(Color.LIGHT_GRAY);
@@ -171,7 +170,6 @@ public class Connect4GUI {
 		String playerNum = splitMessage[1];
 		String commandContent = splitMessage[2];
 		
-		
 		switch (command){
 			case "start":
 				currentPlayer = Integer.parseInt(playerNum);
@@ -180,7 +178,8 @@ public class Connect4GUI {
 				} else {
 					currentPlayerColor = "Black";
 				}
-				setBoardSize(commandContent);
+				boardSize = commandContent;
+				setBoardSize(boardSize);
 				setConnect4View();
 				break;
 				
